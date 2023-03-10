@@ -1,0 +1,55 @@
+.program vsync_detector
+.wrap_target
+waitforvsync:
+wait 1 gpio 15 ;might be redundant.
+wait 0 gpio 15 ; make sure we catch a falling edge.
+set x 22
+vsyncdelaywait:
+jmp x-- vsyncdelaywait [29]
+; 22 * 29 = 638 cycles @66.5MHz ~ 9.5us
+; significantly longer than typical 6us downcycle.
+jmp pin waitforvsync ; if sync went high, this isn't vsync
+; confirmed vsync LO at this point
+set x 31 ; now after 12 flips we should be in true hsync
+waitforhsync:
+wait 1 gpio 15
+wait 0 gpio 15
+jmp x-- waitforhsync
+wait 1 gpio 15
+;now we're in hsync proper. allow pixel gathering
+; set pins 1
+mov x y ; get our 224 lines
+hblanks:
+wait 0 gpio 15
+wait 1 gpio 15
+irq clear 0
+jmp x-- hblanks
+
+irq set 0 ; block pixel grabs until we catch a vsync
+; set pins 0
+irq wait 4 ; set irq 4 and wait for the CPU to clear grabbing the next frame.
+.wrap
+
+
+%c-sdk {
+    static inline void vsync_detector_program_init(PIO pio, uint sm, uint offset, uint syncInPin) {
+        pio_sm_config c = vsync_detector_program_get_default_config(offset);
+
+        //sm_config_set_set_pins(&c, outPin, 1);
+        //sm_config_set_out_pins(&c, outPin, 1);
+        sm_config_set_in_pins(&c, syncInPin);
+
+        //pio_gpio_init(pio, outPin);
+
+        //pio_sm_set_consecutive_pindirs(pio, sm, outPin, 1, true);
+        pio_sm_set_consecutive_pindirs(pio, sm, syncInPin, 1, false);
+
+        sm_config_set_jmp_pin(&c, syncInPin);
+
+        sm_config_set_clkdiv(&c, 2); // 133/2 = 66.5MHz
+
+        // Initialize and enable the state machine.
+        pio_sm_init(pio, sm, offset, &c);
+        pio_sm_set_enabled(pio, sm, true);
+    }
+%}

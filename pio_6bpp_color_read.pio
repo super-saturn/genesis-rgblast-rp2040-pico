@@ -1,0 +1,59 @@
+.program pio_6bpp_color_read
+
+; This reads one horizontal line of pixels only
+entry_point:
+wait 0 irq 0
+irq set 0 ; as soon as we get in, re-flag the irq
+; we don't want to retrigger until the next hsync
+set x 31 ; the first 44 pixels are junk
+hblank: ; this looks weird but: 44px * 8 cycles pp = 352
+jmp x-- hblank [11] ; 352 / 32 = 11 cycles per loop
+
+mov x y [15] ; get 320 pixels also delay about another 2 px for some reason
+pixelloop1:
+in pins 6 [7] ; 8bit
+in pins 6 [7] ; 14bit
+in pins 6 [7] ; 20bit
+in pins 6 [7] ; 26bit
+in pins 6 [5] ; 32bits
+in null 2     ; 2bits
+jmp x-- pixelloop1
+jmp entry_point
+
+; genesis master clock is 53.693175MHz
+; the genesis produces pixels at a  M/8 (6.712MHz) rate in H40 mode
+; 0.14899 uS per pixel (148.99ns)
+; this means the 420 pixels get blasted out in ~62.6us.
+; thus
+; we get about 8325.6 clock cycles at full speed for 420 pixels
+; or about 19.823 clocks per pixel.
+;
+; we'll try the naive clock_get_hz(clk_sys) / 53693175
+; if jitter is a problem
+; we should use a faster clock so we can nudge data
+
+
+%c-sdk {
+    #include "hardware/clocks.h"
+
+    static inline void pio_6bpp_color_read_program_init(PIO pio, uint sm, uint offset, uint startPin) {
+        pio_sm_config c = pio_6bpp_color_read_program_get_default_config(offset);
+
+        sm_config_set_in_pins(&c, startPin);
+        //sm_config_set_out_pins(&c, statusPin, 1);
+        //sm_config_set_set_pins(&c, statusPin, 1);
+
+        //pio_gpio_init(pio, statusPin);
+
+        //pio_sm_set_consecutive_pindirs(pio, sm, statusPin, 1, true);
+        pio_sm_set_consecutive_pindirs(pio, sm, startPin, 6, false);
+        sm_config_set_in_shift(&c, false, true, 32);
+
+        float div = clock_get_hz(clk_sys) / 53693175.0; // attempt to match Genesis master clock.
+        sm_config_set_clkdiv(&c, div);
+
+        // Initialize and enable the state machine.
+        pio_sm_init(pio, sm, offset, &c);
+        pio_sm_set_enabled(pio, sm, true);
+    }
+%}
