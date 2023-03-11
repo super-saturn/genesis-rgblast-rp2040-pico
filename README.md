@@ -15,7 +15,8 @@ To build a functioning version from scratch, please see the circuit-schematics f
 
 At the moment this device is capable of 6 bits per pixel, ~30FPS. Video is fairly noisy in the test PCBs which have been constructed:
 
-https://user-images.githubusercontent.com/127321359/224422179-d3227273-6468-4ef0-991d-ddc945e091db.mp4
+
+https://user-images.githubusercontent.com/127321359/224463316-a748747a-c26d-4245-b84a-755739763bbe.mp4
 
 ## Getting Started
 
