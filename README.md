@@ -8,7 +8,10 @@ The SEGA Genesis RGBlast Processor is a Raspi Pico based video capture device th
 
 The analog channels (RGB) are captured via a 2 bit Flash ADC which is half hardware and half PIO program.
 
-To build a functioning version from scratch, please see the circuit-schematics folder. PCB Schematics will be released if/when a proven design is achieved.
+To build a functioning version from scratch, please see the circuit-schematics folder. PCB Schematics will be released if/when a proven design is achieved. Here is one of the latest prototypes as built from the schematic:
+
+![image](https://user-images.githubusercontent.com/127321359/224458808-1a91d507-6a59-4f87-ad3d-20f5ef828fd9.png)
+
 
 At the moment this device is capable of 6 bits per pixel, ~30FPS. Video is fairly noisy in the test PCBs which have been constructed:
 
